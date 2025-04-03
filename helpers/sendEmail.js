@@ -6,7 +6,7 @@ dotenv.config();
 const sendEmail = async (to, subject, text) => {
   try {
     let transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_HOST,  // ✅ Load from .env
+      host: process.env.EMAIL_HOST,  
       port: process.env.EMAIL_PORT,
       auth: {
         user: process.env.EMAIL_USER,
@@ -23,7 +23,7 @@ const sendEmail = async (to, subject, text) => {
 
     console.log(`📧 Email sent to ${to}`);
   } catch (error) {
-    console.error("❌ Error sending email:", error.message);
+    console.error("Error sending email:", error.message);
     throw new Error("Email sending failed");
   }
 };

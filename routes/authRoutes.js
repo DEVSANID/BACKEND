@@ -3,6 +3,8 @@ import express from 'express';
 import rateLimit from 'express-rate-limit';
 import authMiddleware from '../middlewares/authMiddleware.js'; // Add this middleware
 import { signup, login, getUser, logout, forgotPassword, resetPassword } from '../controllers/authController.js';
+import { registerAdmin, loginAdmin } from "../controllers/adminController.js";
+
 
 const router = express.Router();
 
@@ -27,6 +29,8 @@ router.get('/user', authMiddleware, getUser); // Fetch user details
 router.post('/logout', logout); // Logout route
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password/:token", resetPassword);
+router.post("/register-admin", registerAdmin);
+router.post("/admin/login", loginAdmin);
 
 
 export default router;

@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
 const UserSchema = new mongoose.Schema(
     {
@@ -18,5 +18,7 @@ UserSchema.pre('findOne', function(next) {
     next();
 });
 
-const User = mongoose.model('User', UserSchema);
+// ✅ Fix: Prevent multiple model registration
+const User = mongoose.models.User || mongoose.model("User", UserSchema);
+
 export default User;

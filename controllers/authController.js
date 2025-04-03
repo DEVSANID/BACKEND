@@ -128,7 +128,7 @@ export const forgotPassword = async (req, res) => {
         user.resetPasswordToken = resetToken;
         user.resetPasswordExpires = Date.now() + 3600000; // 1-hour expiration
 
-        await user.save({ validateBeforeSave: false }); // ✅ Ensure token saves properly
+        await user.save({ validateBeforeSave: false }); // Ensure token saves properly
 
         console.log("Saved Token:", resetToken); // Debugging: Check if token is stored
 
@@ -164,7 +164,7 @@ export const resetPassword = async (req, res) => {
         // 🔹 Find user with valid token **AND** expiry check
         const user = await User.findOne({
             resetPasswordToken: token,
-            resetPasswordExpires: { $gt: Date.now() } // ✅ Ensures token is not expired
+            resetPasswordExpires: { $gt: Date.now() } // Ensures token is not expired
         });
 
         console.log("User Found:", user); // Debugging
@@ -173,7 +173,7 @@ export const resetPassword = async (req, res) => {
             return res.status(400).json({ message: "Invalid or expired token" });
         }
 
-        // ✅ Hash new password
+        //  Hash new password
         const salt = await bcrypt.genSalt(10);
         user.password = await bcrypt.hash(newPassword, salt);
 
