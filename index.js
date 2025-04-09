@@ -3,62 +3,57 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import path from 'path';
-import { fileURLToPath } from 'url'; 
+import { fileURLToPath } from 'url';
 import { CohereClient } from 'cohere-ai';
 
-// Import Routes
+
+// ✅ Fix `__dirname` in ES Modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config();
+
+const app = express();
+
+// ✅ Middleware
+app.use(cors({
+  origin: 'http://localhost:3000',
+  credentials: true,
+}));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// ✅ Serve Static Files (images, tickets, etc.)
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));  // 🖼️ Blog images
+app.use("/tickets", express.static(path.join(__dirname, "tickets")));  // 🎫 Ticket PDFs
+
+// ✅ Cohere AI Initialization
+const cohere = new CohereClient({
+  token: process.env.COHERE_API_KEY,
+});
+
+// ✅ Routes
 import authRoutes from './routes/authRoutes.js';
 import eventRoutes from './routes/eventRoutes.js';
 import bookingRoutes from './routes/bookingRoutes.js';
 import blogRoutes from './routes/blogRoutes.js';
 import visitorRoutes from './routes/visitorRoutes.js';
 import adminAuthRoutes from './routes/adminRoutes.js';
-import orderRoutes from "./routes/orderRoutes.js";
+import orderRoutes from './routes/orderRoutes.js';
 import collegeRoutes from './routes/collegeRoutes.js';
+import tickets from './routes/tickets.js';
 
-
-dotenv.config();
-
-const app = express();
-
-// Middleware
-app.use(cors({
-  origin: 'http://localhost:3000',
-  credentials: true,
-}));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true })); // ✅ Ensures form data is parsed
-app.use("/uploads", express.static(path.join("uploads")));
-
-// Fix `__dirname` in ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-
-
-// Serve static files from 'uploads' directory
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use(cors({ origin: "http://localhost:3000", credentials: true }));
-app.use("/uploads", express.static("uploads"));
-
-
-// Initialize Cohere AI
-const cohere = new CohereClient({
-  token: process.env.COHERE_API_KEY,
-});
-
-// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/bookings', bookingRoutes);
-app.use('/api/blogs', blogRoutes);
+app.use('/api/blogs', blogRoutes); // ✅ Blog route with image handling
 app.use('/api/visitors', visitorRoutes);
 app.use('/api/admin', adminAuthRoutes);
-app.use("/api/orders", orderRoutes);
-app.use("/api/colleges", collegeRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/colleges', collegeRoutes);
+app.use('/api/tickets', tickets);
 
-
-// AI Chat Endpoint
+// ✅ AI Chat Endpoint (Cohere-powered)
 app.post('/api/chat', async (req, res) => {
   const { message } = req.body;
 
@@ -89,15 +84,15 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
-// MongoDB Connection
+// ✅ MongoDB Connection & Start Server
 const PORT = process.env.PORT || 5000;
 
 mongoose
   .connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => {
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+    app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
   })
   .catch((err) => {
-    console.error('MongoDB Connection Error:', err);
-    process.exit(1); // Exit process on DB failure
+    console.error('❌ MongoDB Connection Error:', err);
+    process.exit(1);
   });

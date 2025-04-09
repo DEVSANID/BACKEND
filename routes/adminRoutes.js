@@ -6,7 +6,10 @@ import User from "../models/user.js";
 import Visitor from "../models/Visitor.js";
 import Booking from "../models/Booking.js";
 import Event from "../models/event.js"; // ✅ Import Event model
-import { getDashboardStats } from "../controllers/adminController.js"; // ✅ Import getDashboardStats function
+import { getDashboardStats } from "../controllers/adminController.js"; 
+import fs from "fs";
+import path from "path";
+
 
 const router = Router();
 
@@ -101,5 +104,49 @@ router.get("/stats", async (req, res) => {
     res.status(500).json({ success: false, message: "Error fetching stats", error });
   }
 });
+// GET /api/admin/bookings - Fetch all bookings with event name
+router.get("/bookings", async (req, res) => {
+  try {
+    const bookings = await Booking.find().populate("eventId","title").exec();
+
+    const formatted = bookings.map((b) => ({
+      _id: b._id,
+      eventName: b.eventId?.title || "Unknown Event",
+      userEmail: b.email,
+      paymentId: b.paymentId,
+      ticket: b.ticketPath,
+      createdAt: b.createdAt,
+    }));
+
+    res.json(formatted);
+  } catch (err) {
+    console.error("Admin Bookings Fetch Error:", err);
+    res.status(500).json({ message: "Error fetching bookings" });
+  }
+});
+
+
+// DELETE /api/admin/bookings/:id
+router.delete("/bookings/:id", async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) return res.status(404).json({ message: "Booking not found" });
+
+    // Delete associated ticket file
+    if (booking.ticketPath) {
+      const filePath = path.join("tickets", path.basename(booking.ticketPath));
+      fs.unlink(filePath, (err) => {
+        if (err) console.error("Ticket delete error:", err);
+      });
+    }
+
+    await booking.deleteOne();
+    res.json({ success: true, message: "Booking deleted" });
+  } catch (err) {
+    console.error("Delete booking error:", err);
+    res.status(500).json({ message: "Error deleting booking" });
+  }
+});
+
 
 export default router;

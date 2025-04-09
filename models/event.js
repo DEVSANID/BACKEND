@@ -11,7 +11,7 @@ const eventSchema = new mongoose.Schema({
   imageUrl: { type: String, required: false },
 });
 
-// ✅ Fix: Prevents re-compiling the model
+
 const Event = mongoose.models.Event || mongoose.model("Event", eventSchema);
 
 export default Event;

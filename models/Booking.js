@@ -9,6 +9,7 @@ const bookingSchema = new mongoose.Schema({
   paymentId: { type: String, required: true },
   amountPaid: { type: Number, required: true },
   createdAt: { type: Date, default: Date.now },
+  ticketPath: { type: String },
 });
 
 export default mongoose.model("Booking", bookingSchema);

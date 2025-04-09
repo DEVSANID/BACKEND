@@ -97,3 +97,40 @@ export const DeleteEvent = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
+// 🔍 Search Events by title, startDate, and venue (location)
+export const SearchEvents = async (req, res) => {
+  try {
+    const { name, date, location } = req.query;
+
+    console.log("Search Params:", { name, date, location });
+
+    const query = {};
+
+    if (name) {
+      query.title = { $regex: name, $options: "i" };
+    }
+
+    if (date) {
+      query.startDate = date;
+    }
+
+    if (location) {
+      query.venue = { $regex: location, $options: "i" };
+    }
+
+    console.log("Mongo Query:", query);
+
+    const events = await Event.find(query);
+
+    const updatedEvents = events.map((event) => ({
+      ...event._doc,
+      imageUrl: event.imageUrl ? `http://localhost:5000${event.imageUrl}` : null,
+    }));
+
+    res.status(200).json(updatedEvents);
+  } catch (error) {
+    console.error("Search failed:", error);
+    res.status(500).json({ message: "Search failed", error: error.message });
+  }
+};

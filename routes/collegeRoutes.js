@@ -40,10 +40,14 @@ router.get("/trending", async (req, res) => {
 // ✅ Create a new college (Admin Only)
 router.post("/create", upload.single("image"), async (req, res) => {
     try {
-        const { name, location, rating } = req.body;
+        const { name, location, rating, description } = req.body;
         const image = req.file ? `/uploads/${req.file.filename}` : null;
 
-        const newCollege = new College({ name, location, rating, image });
+        if (!name || !location || !rating || !description || !image) {
+            return res.status(400).json({ message: "All fields are required" });
+        }
+
+        const newCollege = new College({ name, location, rating, description, image });
         await newCollege.save();
         
         res.status(201).json({ message: "College added successfully!", newCollege });
@@ -55,7 +59,7 @@ router.post("/create", upload.single("image"), async (req, res) => {
 // ✅ Update a college (Admin Only)
 router.put("/update/:id", upload.single("image"), async (req, res) => {
     try {
-        const { name, location, rating } = req.body;
+        const { name, location, rating, description } = req.body;
         let image = req.body.image;
 
         if (req.file) {
@@ -71,7 +75,7 @@ router.put("/update/:id", upload.single("image"), async (req, res) => {
 
         const updatedCollege = await College.findByIdAndUpdate(
             req.params.id,
-            { name, location, rating, image },
+            { name, location, rating, description, image },
             { new: true }
         );
 
