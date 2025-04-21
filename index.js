@@ -6,33 +6,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { CohereClient } from 'cohere-ai';
 
-
-// ✅ Fix `__dirname` in ES Modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-dotenv.config();
-
-const app = express();
-
-// ✅ Middleware
-app.use(cors({
-  origin: 'http://localhost:3000',
-  credentials: true,
-}));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// ✅ Serve Static Files (images, tickets, etc.)
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));  // 🖼️ Blog images
-app.use("/tickets", express.static(path.join(__dirname, "tickets")));  // 🎫 Ticket PDFs
-
-// ✅ Cohere AI Initialization
-const cohere = new CohereClient({
-  token: process.env.COHERE_API_KEY,
-});
-
-// ✅ Routes
+// Routes
 import authRoutes from './routes/authRoutes.js';
 import eventRoutes from './routes/eventRoutes.js';
 import bookingRoutes from './routes/bookingRoutes.js';
@@ -42,18 +16,47 @@ import adminAuthRoutes from './routes/adminRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
 import collegeRoutes from './routes/collegeRoutes.js';
 import tickets from './routes/tickets.js';
+import reviewRoutes from './routes/reviewRoutes.js'; // ✅ Make sure this path is correct
 
+// Setup path utilities
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Env config
+dotenv.config();
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+// Middleware
+app.use(cors({
+  origin: 'http://localhost:3000',
+  credentials: true,
+}));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Static folders
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));    // Blog images
+app.use("/tickets", express.static(path.join(__dirname, "tickets")));    // Ticket PDFs
+
+// Cohere AI setup
+const cohere = new CohereClient({
+  token: process.env.COHERE_API_KEY,
+});
+
+// Register Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/bookings', bookingRoutes);
-app.use('/api/blogs', blogRoutes); // ✅ Blog route with image handling
+app.use('/api/blogs', blogRoutes); 
 app.use('/api/visitors', visitorRoutes);
 app.use('/api/admin', adminAuthRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/colleges', collegeRoutes);
 app.use('/api/tickets', tickets);
+app.use('/api/reviews', reviewRoutes);
 
-// ✅ AI Chat Endpoint (Cohere-powered)
+// AI Chat Route
 app.post('/api/chat', async (req, res) => {
   const { message } = req.body;
 
@@ -79,20 +82,20 @@ app.post('/api/chat', async (req, res) => {
 
     res.json({ message: response.generations[0].text });
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Cohere AI Error:', error);
     res.status(500).json({ error: 'Something went wrong. Please try again later.' });
   }
 });
 
-// ✅ MongoDB Connection & Start Server
-const PORT = process.env.PORT || 5000;
-
-mongoose
-  .connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+// MongoDB Connection
+mongoose.connect(process.env.MONGO_URI)
   .then(() => {
-    app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
+    console.log(' MongoDB Connected');
+    app.listen(PORT, () => {
+      console.log(` Server running on http://localhost:${PORT}`);
+    });
   })
   .catch((err) => {
-    console.error('❌ MongoDB Connection Error:', err);
+    console.error('MongoDB Connection Error:', err.message);
     process.exit(1);
   });

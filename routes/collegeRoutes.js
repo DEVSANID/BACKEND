@@ -10,7 +10,7 @@ const router = Router();
 // Ensure uploads directory exists
 const uploadDir = "uploads";
 if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir);
+    fs.mkdirSync(uploadDir, { recursive: true });
 }
 
 // Multer setup for image uploads
@@ -27,45 +27,86 @@ const upload = multer({ storage });
 // Serve uploaded images statically
 router.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
-// ✅ Get all colleges (Trending Colleges)
+// ✅ Get trending colleges with pagination
+// In your college routes file
 router.get("/trending", async (req, res) => {
     try {
-        const colleges = await College.find().sort({ rating: -1 });
-        res.status(200).json(colleges);
+        const limit = parseInt(req.query.limit) || 3;
+        const skip = parseInt(req.query.skip) || 0;
+        
+        // Get trending colleges (sorted by rating)
+        const colleges = await College.find()
+            .sort({ rating: -1 })
+            .skip(skip)
+            .limit(limit);
+            
+        res.status(200).json(colleges); // Send just the array of colleges
     } catch (error) {
-        res.status(500).json({ message: "Server error", error });
+        console.error("Error fetching colleges:", error);
+        res.status(500).json({ 
+            message: "Server error",
+            error: error.message 
+        });
     }
 });
 
-// ✅ Create a new college (Admin Only)
+// ✅ Create a new college
 router.post("/create", upload.single("image"), async (req, res) => {
     try {
         const { name, location, rating, description } = req.body;
-        const image = req.file ? `/uploads/${req.file.filename}` : null;
-
-        if (!name || !location || !rating || !description || !image) {
-            return res.status(400).json({ message: "All fields are required" });
+        
+        if (!req.file) {
+            return res.status(400).json({ 
+                success: false,
+                message: "Image is required" 
+            });
         }
 
-        const newCollege = new College({ name, location, rating, description, image });
+        const image = `/uploads/${req.file.filename}`;
+        const newCollege = new College({ 
+            name, 
+            location, 
+            rating, 
+            description, 
+            image 
+        });
+
         await newCollege.save();
         
-        res.status(201).json({ message: "College added successfully!", newCollege });
+        res.status(201).json({ 
+            success: true,
+            message: "College added successfully!", 
+            college: newCollege 
+        });
     } catch (error) {
-        res.status(500).json({ message: "Error adding college", error });
+        console.error("Error creating college:", error);
+        res.status(500).json({ 
+            success: false,
+            message: "Error adding college",
+            error: error.message 
+        });
     }
 });
 
-// ✅ Update a college (Admin Only)
+// ✅ Update a college
 router.put("/update/:id", upload.single("image"), async (req, res) => {
     try {
+        const { id } = req.params;
         const { name, location, rating, description } = req.body;
-        let image = req.body.image;
+        
+        const college = await College.findById(id);
+        if (!college) {
+            return res.status(404).json({ 
+                success: false,
+                message: "College not found" 
+            });
+        }
 
+        let image = college.image;
         if (req.file) {
-            const oldCollege = await College.findById(req.params.id);
-            if (oldCollege && oldCollege.image) {
-                const oldImagePath = path.join(process.cwd(), oldCollege.image);
+            // Delete old image if exists
+            if (college.image) {
+                const oldImagePath = path.join(process.cwd(), college.image);
                 if (fs.existsSync(oldImagePath)) {
                     fs.unlinkSync(oldImagePath);
                 }
@@ -74,25 +115,40 @@ router.put("/update/:id", upload.single("image"), async (req, res) => {
         }
 
         const updatedCollege = await College.findByIdAndUpdate(
-            req.params.id,
+            id,
             { name, location, rating, description, image },
-            { new: true }
+            { new: true, runValidators: true }
         );
 
-        res.status(200).json({ message: "College updated!", updatedCollege });
+        res.status(200).json({ 
+            success: true,
+            message: "College updated successfully!",
+            college: updatedCollege 
+        });
     } catch (error) {
-        res.status(500).json({ message: "Error updating college", error });
+        console.error("Error updating college:", error);
+        res.status(500).json({ 
+            success: false,
+            message: "Error updating college",
+            error: error.message 
+        });
     }
 });
 
-// ✅ Delete a college (Admin Only)
+// ✅ Delete a college
 router.delete("/delete/:id", async (req, res) => {
     try {
-        const college = await College.findById(req.params.id);
+        const { id } = req.params;
+        const college = await College.findById(id);
+        
         if (!college) {
-            return res.status(404).json({ message: "College not found" });
+            return res.status(404).json({ 
+                success: false,
+                message: "College not found" 
+            });
         }
 
+        // Delete associated image
         if (college.image) {
             const imagePath = path.join(process.cwd(), college.image);
             if (fs.existsSync(imagePath)) {
@@ -100,10 +156,19 @@ router.delete("/delete/:id", async (req, res) => {
             }
         }
 
-        await College.findByIdAndDelete(req.params.id);
-        res.status(200).json({ message: "College deleted!" });
+        await College.findByIdAndDelete(id);
+        
+        res.status(200).json({ 
+            success: true,
+            message: "College deleted successfully!" 
+        });
     } catch (error) {
-        res.status(500).json({ message: "Error deleting college", error });
+        console.error("Error deleting college:", error);
+        res.status(500).json({ 
+            success: false,
+            message: "Error deleting college",
+            error: error.message 
+        });
     }
 });
 

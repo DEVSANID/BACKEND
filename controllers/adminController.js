@@ -25,7 +25,7 @@ export const registerAdmin = async (req, res) => {
       name,
       email: email.toLowerCase(),
       password: hashedPassword,
-      photo: photo || "https://via.placeholder.com/100",s
+      photo: photo || "https://via.placeholder.com/100", s
     });
 
     await admin.save();
@@ -108,13 +108,7 @@ export const getDashboardStats = async (req, res) => {
     const totalRevenueTickets = totalRevenueTicketsResult.length > 0 ? totalRevenueTicketsResult[0].totalRevenue : 0;
     const totalRevenueShop = totalRevenueShopResult.length > 0 ? totalRevenueShopResult[0].totalRevenue : 0;
 
-    // Debugging logs
-    console.log("Total Users:", totalUsers);
-    console.log("Total Visitors:", totalVisitors);
-    console.log("Total Booked Events:", totalBookedEvents);
-    console.log("Total Events:", totalEvents);
-    console.log("Total Revenue Tickets:", totalRevenueTickets);
-    console.log("Total Revenue Shop:", totalRevenueShop);
+
 
     res.json({
       totalUsers,
